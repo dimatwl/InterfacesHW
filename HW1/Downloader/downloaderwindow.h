@@ -2,6 +2,7 @@
 #define DOWNLOADERWINDOW_H
 
 #include <QMainWindow>
+#include <QLabel>
 
 class DownloaderWindow : public QMainWindow
 {
