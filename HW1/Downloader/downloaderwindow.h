@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QTableWidget>
+#include <QMenuBar>
+#include <QHeaderView>
 
 #include "config.h"
 

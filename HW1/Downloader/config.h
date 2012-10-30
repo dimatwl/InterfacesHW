@@ -12,7 +12,9 @@ class Config
 {
     //Data to store in DB
     quint8 maxNumberOfSimultaneousDownloads;
-    QList<DownloadInfo> downloadsList;
+    quint32 mainWindowLength;
+    quint32 mainWindowHeight;
+    mutable QList<DownloadInfo> downloadsList;
 
     //Maintenance data
     bool isDBOpened;
@@ -20,6 +22,8 @@ class Config
 
     //Default values
     static const quint8 DEFAULT_MAX_NUMER_OF_SIMULTANEOUS_DOWNLOADS = 3;
+    static const quint32 DEFAULT_MAIN_WINDOW_LENGTH = 500;
+    static const quint32 DEFAULT_MAIN_WINDOW_HEIGHT = 300;
 
     void initFromDB();
 
@@ -34,7 +38,14 @@ class Config
 public:
     static const Config& Instance();
 
-    void saveToDB() const; //Can't be plased to destructor
+    void saveToDB() const; //Can't be placed to destructor
+
+    quint8 getMaxNumberOfSimultaneousDownloads() const;
+    quint32 getMainWindowLength() const;
+    quint32 getMainWindowHeight() const;
+    QList<DownloadInfo>& getDownloadsList() const;
+
+
 };
 
 #endif // CONFIG_H

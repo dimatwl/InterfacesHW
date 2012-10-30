@@ -3,6 +3,9 @@
 Config::Config() {
     QSqlDatabase dbase = QSqlDatabase::addDatabase("QSQLITE");
     dbase.setDatabaseName("DownloaderConfig.sqlite");
+    maxNumberOfSimultaneousDownloads = DEFAULT_MAX_NUMER_OF_SIMULTANEOUS_DOWNLOADS;
+    mainWindowLength = DEFAULT_MAIN_WINDOW_LENGTH;
+    mainWindowHeight = DEFAULT_MAIN_WINDOW_HEIGHT;
     if (!dbase.open()) {
         isDBOpened = false;
         qDebug() << "Can't open DB";
@@ -10,7 +13,6 @@ Config::Config() {
                   "DownloaderConfig.sqlite can't be opened."
                   "Configuration set to defaults and all "
                   "changes will NOT be saved.");
-        maxNumberOfSimultaneousDownloads = DEFAULT_MAX_NUMER_OF_SIMULTANEOUS_DOWNLOADS;
     } else {
         isDBOpened = true;
         initFromDB();
@@ -21,6 +23,61 @@ void Config::initFromDB() {
     if (isDBOpened) {
         QSqlQuery selectParametersQuery("SELECT * FROM Parameters",dbase);
         QSqlQuery selectDownloadsListQuery("SELECT * FROM DownloadsList", dbase);
+
+        bool selectParametersExecuted = false;
+        bool selectDownloadsListExecuted = false;
+        if (!selectParametersQuery.exec()) {
+            qDebug() << "Can't select Parameters. Default values would be used.";
+            selectParametersExecuted = false;
+        } else {
+            selectParametersExecuted = true;
+        }
+        if (!selectDownloadsListQuery.exec()) {
+            qDebug() << "Can't select DownloadsList";
+            selectDownloadsListExecuted = false;
+        } else {
+            selectDownloadsListExecuted = true;
+        }
+        qDebug() << "Selects executed";
+        if (selectParametersExecuted) {
+            if (selectParametersQuery.next()) {
+                if (selectParametersQuery.size() >= 2) {
+                    maxNumberOfSimultaneousDownloads = selectParametersQuery.value(1).toUInt();
+                    if (selectParametersQuery.size() >= 3) {
+                        mainWindowLength = selectParametersQuery.value(2).toUInt();
+                        if (selectParametersQuery.size() >= 4) {
+                            mainWindowHeight = selectParametersQuery.value(3).toUInt();
+                            qDebug() << "All Parameters successfully selected.";
+                        } else {
+                            qDebug() << "There is less than 4 columns in record from Parameters table.";
+                        }
+                    } else {
+                        qDebug() << "There is less than 3 columns in record from Parameters table.";
+                    }
+                } else {
+                    qDebug() << "There is less than 2 columns in record from Parameters table.";
+                }
+
+            } else {
+                qDebug() << "Parameters table is empty. Default values would be used.";
+            }
+        }
+        if (selectDownloadsListExecuted) {
+            while (selectDownloadsListQuery.next()) {
+                if (selectDownloadsListQuery.size() >= 5) {
+                    DownloadInfo info(
+                                      selectDownloadsListQuery.value(1).toString(),
+                                      selectDownloadsListQuery.value(2).toString(),
+                                      selectDownloadsListQuery.value(3).toString(),
+                                      selectDownloadsListQuery.value(4).toUInt()
+                                      );
+                    getDownloadsList().push_back(info);
+                    qDebug() << "Download info inserted.";
+                } else {
+                    qDebug() << "There is less than 5 columns in record from DownloadsList table.";
+                }
+            }
+        }
     }
 }
 
@@ -31,27 +88,28 @@ void Config::saveToDB() const{
 
         QSqlQuery createParametersQuery("CREATE TABLE IF NOT EXISTS Parameters ("
                                         "recordID INTEGER PRIMARY KEY NOT NULL, "
-                                        "maxNumberOfSimultaneousDownloads INTEGER NOT NULL"
+                                        "maxNumberOfSimultaneousDownloads INTEGER NOT NULL, "
+                                        "mainWindowLength INTEGER NOT NULL, "
+                                        "mainWindowHeight INTEGER NOT NULL"
                                         ");",dbase);
         QSqlQuery createDownloadsListQuery("CREATE TABLE IF NOT EXISTS DownloadsList ("
-                                           "number INTEGERPRIMARY KEY NOT NULL, "
+                                           "number INTEGER PRIMARY KEY NOT NULL, "
                                            "name TEXT, "
                                            "localAddress TEXT, "
                                            "internetAddress TEXT, "
                                            "priority INTEGER"
                                            ");", dbase);
         QString insertParametersQueryTemplate = "INSERT INTO "
-                "Parameters(maxNumberOfSimultaneousDownloads) "
-                "VALUES (%1);";
+                "Parameters(maxNumberOfSimultaneousDownloads, mainWindowLength, mainWindowHeight) "
+                "VALUES (%1, %2, %3);";
         QSqlQuery insertParametersQuery(insertParametersQueryTemplate
-                                        .arg(maxNumberOfSimultaneousDownloads),
+                                        .arg(getMaxNumberOfSimultaneousDownloads())
+                                        .arg(getMainWindowLength())
+                                        .arg(getMainWindowHeight()),
                                         dbase);
         QString insertDownloadsListQueryTemplate = "INSERT INTO "
                 "DownloadsList(number, name, localAddress, internetAddress, priority) "
                 "VALUES (%1, '%2', '%3', '%4', %5);";
-        QSqlQuery insertDownloadsListQuery(insertDownloadsListQueryTemplate
-                                           .arg(maxNumberOfSimultaneousDownloads),
-                                           dbase);
         if (!dropParametersQuery.exec()) {
             qDebug() << "Can't drop Parameters";
             showError("Have DB issues. Current state will NOT be saved."
@@ -77,7 +135,6 @@ void Config::saveToDB() const{
             showError("Have DB issues. Current state will NOT be saved."
                       "(Can't insert to Parameters table");
         } else {
-            qDebug() << "Start to save Downloads";
             for (QList<DownloadInfo>::const_iterator i = downloadsList.begin(); i != downloadsList.end(); ++i) {
                 QSqlQuery insertDownloadsListQuery(insertDownloadsListQueryTemplate
                                                    .arg(i->getNumber())
@@ -109,5 +166,21 @@ void Config::showError(QString message) const{
 const Config& Config::Instance() {
     static Config myInstance;
     return myInstance;
+}
+
+QList<DownloadInfo>& Config::getDownloadsList() const {
+    return this->downloadsList;
+}
+
+quint32 Config::getMainWindowHeight() const {
+    return this->mainWindowHeight;
+}
+
+quint32 Config::getMainWindowLength() const {
+    return this->mainWindowLength;
+}
+
+quint8 Config::getMaxNumberOfSimultaneousDownloads() const {
+    return this->maxNumberOfSimultaneousDownloads;
 }
 

@@ -3,9 +3,12 @@
 DownloaderWindow::DownloaderWindow(QWidget *parent) :
     QMainWindow(parent)
 {
-    myTable = new QTableWidget(5,1);
-    this->setCentralWidget(new QLabel("Hello world", this));
-    //menuBar()->addMenu(tr("&File"));
+    this->resize(500, 300);
+    myTable = new QTableWidget(1,5);
+    this->setCentralWidget(myTable);
+    menuBar()->addMenu("File");
+    menuBar()->addMenu("Help");
+    //myTable->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
     Config::Instance();
 }
 

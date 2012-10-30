@@ -5,7 +5,11 @@
 #include "stardelegate.h"
 #include "starrating.h"
 #include "downloaderwindow.h"
+#include "downloadinfo.h"
 
+#include <vector>
+#include <QVector>
+#include <QList>
 
 //#include "downloaderwindow.h"
 
@@ -41,6 +45,16 @@ void populateTableWidget(QTableWidget *tableWidget)
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
+    std::vector<DownloadInfo> stl;
+    QVector<DownloadInfo> qtv;
+    QList<DownloadInfo> qtl;
+
+    DownloadInfo d("123", "456", "789", 1);
+
+    stl.push_back(d);
+    qtv.push_back(d);
+    qtl.push_back(d);
 
 //    QString s_cwd(getcwd(NULL,0));
 //    qDebug() << "CWD is: " << s_cwd;
